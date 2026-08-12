@@ -46,8 +46,16 @@ impl Bindings {
 /// A divergence between the declared surface and the observed one.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Finding {
-    /// SIG-001 / SIG-002: the spec requires this binding to authorize, and it did not.
+    /// SIG-001: the spec requires this binding to authorize, and nobody did.
     MissingAuthorization { function: String, binding: String },
+    /// SIG-002: someone authorized, but not the address the spec names. This is
+    /// the shape of demanding authorization from the caller rather than from the
+    /// account whose funds move.
+    WrongAuthorizer {
+        function: String,
+        expected_binding: String,
+        actual: String,
+    },
     /// SIG-011: an address authorized that the spec does not name.
     UnexpectedAuthorization { function: String, address: String },
     /// The spec names a binding the test did not supply an address for.
@@ -61,7 +69,15 @@ impl std::fmt::Display for Finding {
         match self {
             Finding::MissingAuthorization { function, binding } => write!(
                 f,
-                "SIG-001 {function}: spec requires '{binding}' to authorize, but it did not"
+                "SIG-001 {function}: spec requires '{binding}' to authorize, but nothing did"
+            ),
+            Finding::WrongAuthorizer {
+                function,
+                expected_binding,
+                actual,
+            } => write!(
+                f,
+                "SIG-002 {function}: spec requires '{expected_binding}' to authorize, but {actual} did instead"
             ),
             Finding::UnexpectedAuthorization { function, address } => write!(
                 f,
@@ -108,15 +124,13 @@ pub fn check_auth(env: &Env, spec: &Spec, function: &str, bindings: &Bindings) -
     let observed = authorizers_of(env, function);
     let mut findings = Vec::new();
     let mut expected = Vec::new();
+    let mut missing = Vec::new();
 
     for binding in &declared.authorizers {
         match bindings.get(binding) {
             Some(address) => {
                 if !observed.contains(address) {
-                    findings.push(Finding::MissingAuthorization {
-                        function: function.to_string(),
-                        binding: binding.clone(),
-                    });
+                    missing.push(binding.clone());
                 }
                 expected.push(address.clone());
             }
@@ -127,13 +141,31 @@ pub fn check_auth(env: &Env, spec: &Spec, function: &str, bindings: &Bindings) -
         }
     }
 
-    for address in &observed {
-        if !expected.contains(address) {
-            findings.push(Finding::UnexpectedAuthorization {
+    let mut unexpected: Vec<&Address> = observed.iter().filter(|a| !expected.contains(a)).collect();
+
+    // A required binding that did not authorize, alongside an address that did,
+    // is the wrong signer rather than a missing check. Reporting it as SIG-001
+    // would send the reader looking for an absent require_auth that is present.
+    for binding in missing {
+        if unexpected.is_empty() {
+            findings.push(Finding::MissingAuthorization {
                 function: function.to_string(),
-                address: format!("{address:?}"),
+                binding,
+            });
+        } else {
+            findings.push(Finding::WrongAuthorizer {
+                function: function.to_string(),
+                expected_binding: binding,
+                actual: format!("{:?}", unexpected.remove(0)),
             });
         }
+    }
+
+    for address in unexpected {
+        findings.push(Finding::UnexpectedAuthorization {
+            function: function.to_string(),
+            address: format!("{address:?}"),
+        });
     }
 
     findings
