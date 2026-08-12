@@ -22,6 +22,18 @@ Status: `done` shipped, `wip` in progress, `todo` not started.
 | PRB-007 | Invocation tamper | signed entry whose invocation args are edited after signing | unedited entry | todo |
 | PRB-008 | Archived state | invoke against an archived auth-nonce entry | invoke after restore | todo |
 
+## Precondition: the harness must not hold the victim's key
+
+Every probe must run with a keystore that contains only the identity the probe
+is impersonating. Client tooling signs authorization entries with any matching
+key it can find, so a harness holding the victim's key will authorize as the
+victim and the attempt will succeed. That reads as a network vulnerability and
+is not one. See [../probes/README.md](../probes/README.md) for the transaction
+that demonstrated this.
+
+A probe that fails with a client-side error has also not tested anything. The
+attempt must reach the network and be rejected there.
+
 ## Preconditions
 
 PRB-001 depends on the nonce being a real ledger entry rather than contract
