@@ -1,0 +1,7 @@
+[contract]
+name = "no_require_auth"
+
+[[function]]
+name = "transfer"
+authorizers = ["from"]
+subinvocations = []

@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/sigil-auth", "crates/sigil-spec"]
+members = ["crates/sigil-auth", "crates/sigil-spec", "crates/sigil-test", "corpus/no_require_auth"]
 resolver = "2"
 
 [workspace.package]
