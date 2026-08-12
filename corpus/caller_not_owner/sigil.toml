@@ -1,0 +1,10 @@
+[contract]
+name = "caller_not_owner"
+
+# The account whose balance is debited is the one that must authorize.
+# Authorizing the caller proves only that the caller consents to their own
+# request, which is not a permission to spend someone else's funds.
+[[function]]
+name = "withdraw"
+authorizers = ["owner"]
+subinvocations = []

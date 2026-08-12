@@ -12,7 +12,7 @@ Status: `done` shipped, `wip` in progress, `todo` not started.
 | id | title | severity | corpus pair | status |
 |----|-------|----------|-------------|--------|
 | SIG-001 | State-changing function requires no authorization | critical | `no_require_auth` | done |
-| SIG-002 | Authorization demanded from the caller instead of the owning address | critical | `caller_not_owner` | todo |
+| SIG-002 | Authorization demanded from the caller instead of the owning address | critical | `caller_not_owner` | done |
 | SIG-003 | Auth tree contains a sub-invocation the spec does not declare | high | `undeclared_transfer` | todo |
 | SIG-004 | Declared sub-invocation is never demanded | medium | `missing_subinvocation` | todo |
 | SIG-005 | Unauthorized caller succeeds against a restricted function | critical | `open_admin_fn` | todo |
