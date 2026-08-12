@@ -1,0 +1,12 @@
+[package]
+name = "sigil-spec"
+description = "Parser for sigil.toml, the declared authorization surface of a Soroban contract"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+toml = "0.8"
