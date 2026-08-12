@@ -15,6 +15,11 @@
 //! demanded, so `env.auths()` describes the contract's real authorization
 //! surface. A contract that never calls `require_auth` records nothing, which
 //! is what makes a missing check visible instead of silent.
+//!
+//! Call this immediately after the invocation under test. `env.auths()`
+//! describes only the most recent call, so a read-only getter in between will
+//! clear it and every check will report a missing authorization that was
+//! actually demanded.
 
 use sigil_spec::Spec;
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};

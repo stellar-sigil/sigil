@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/sigil-auth", "crates/sigil-spec", "crates/sigil-test", "corpus/no_require_auth", "corpus/caller_not_owner"]
+members = ["crates/sigil-auth", "crates/sigil-spec", "crates/sigil-test", "corpus/no_require_auth", "corpus/caller_not_owner", "probes/auth_target"]
 resolver = "2"
 
 [workspace.package]
@@ -14,3 +14,12 @@ sha2 = "0.10"
 hex = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+panic = "abort"
+codegen-units = 1
+lto = true
