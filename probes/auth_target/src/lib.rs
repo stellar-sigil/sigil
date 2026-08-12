@@ -46,8 +46,10 @@ mod tests {
         let owner = Address::generate(&env);
 
         client.set_value(&owner, &42);
+        // Read auths before any further invocation: env.auths() describes the
+        // most recent call, and get_value would clear it.
+        assert_eq!(env.auths().len(), 1);
 
         assert_eq!(client.get_value(&owner), 42);
-        assert_eq!(env.auths().len(), 1);
     }
 }
