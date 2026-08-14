@@ -1,0 +1,10 @@
+[contract]
+name = "undeclared_transfer"
+
+# The payer authorizes one payment to the merchant. Authorizing `pay` must not
+# also authorize anything else, because a signature covers the whole tree
+# beneath it and not just the call the signer thinks they are approving.
+[[function]]
+name = "pay"
+authorizers = ["payer"]
+subinvocations = ["token::transfer"]

@@ -61,6 +61,15 @@ pub enum Finding {
         expected_binding: String,
         actual: String,
     },
+    /// SIG-003: the authorization tree contains a call the spec does not
+    /// declare. Signing for the outer call also signed for this one.
+    UndeclaredSubinvocation {
+        function: String,
+        contract: String,
+        sub_function: String,
+    },
+    /// SIG-004: the spec declares a sub-invocation the contract never made.
+    MissingSubinvocation { function: String, declared: String },
     /// SIG-011: an address authorized that the spec does not name.
     UnexpectedAuthorization { function: String, address: String },
     /// The spec names a binding the test did not supply an address for.
@@ -84,6 +93,18 @@ impl std::fmt::Display for Finding {
                 f,
                 "SIG-002 {function}: spec requires '{expected_binding}' to authorize, but {actual} did instead"
             ),
+            Finding::UndeclaredSubinvocation {
+                function,
+                contract,
+                sub_function,
+            } => write!(
+                f,
+                "SIG-003 {function}: authorizes an undeclared call to {contract}::{sub_function}"
+            ),
+            Finding::MissingSubinvocation { function, declared } => write!(
+                f,
+                "SIG-004 {function}: spec declares sub-invocation '{declared}', which never happened"
+            ),
             Finding::UnexpectedAuthorization { function, address } => write!(
                 f,
                 "SIG-011 {function}: {address} authorized but the spec does not name it"
@@ -99,13 +120,38 @@ impl std::fmt::Display for Finding {
     }
 }
 
-/// Addresses that authorized a top-level invocation of `function`.
-fn authorizers_of(env: &Env, function: &str) -> Vec<Address> {
+/// Recorded authorizations whose top-level call is `function`.
+fn invocations_of(env: &Env, function: &str) -> Vec<(Address, AuthorizedInvocation)> {
     let wanted = Symbol::new(env, function);
     env.auths()
         .into_iter()
         .filter(|(_, invocation)| invokes(invocation, &wanted))
+        .collect()
+}
+
+/// Addresses that authorized a top-level invocation of `function`.
+fn authorizers_of(env: &Env, function: &str) -> Vec<Address> {
+    invocations_of(env, function)
+        .into_iter()
         .map(|(address, _)| address)
+        .collect()
+}
+
+/// The direct children of an authorized invocation, as (contract, function).
+///
+/// Direct children only. A deeper call is the concern of the contract that
+/// makes it, and flattening the tree would report a grandchild as though the
+/// spec's subject had invoked it.
+fn direct_subinvocations(invocation: &AuthorizedInvocation) -> Vec<(Address, Symbol)> {
+    invocation
+        .sub_invocations
+        .iter()
+        .filter_map(|sub| match &sub.function {
+            AuthorizedFunction::Contract((address, symbol, _)) => {
+                Some((address.clone(), symbol.clone()))
+            }
+            _ => None,
+        })
         .collect()
 }
 
@@ -170,6 +216,56 @@ pub fn check_auth(env: &Env, spec: &Spec, function: &str, bindings: &Bindings) -
         findings.push(Finding::UnexpectedAuthorization {
             function: function.to_string(),
             address: format!("{address:?}"),
+        });
+    }
+
+    // Sub-invocations answer a different question from authorizers: not "who
+    // approved this call" but "what else did approving it approve".
+    let observed_subs: Vec<(Address, Symbol)> = invocations_of(env, function)
+        .iter()
+        .flat_map(|(_, invocation)| direct_subinvocations(invocation))
+        .collect();
+
+    let mut declared_subs = Vec::new();
+    for sub in declared.parsed_subinvocations() {
+        match bindings.get(sub.binding) {
+            Some(address) => declared_subs.push((
+                address.clone(),
+                Symbol::new(env, sub.function),
+                format!("{}::{}", sub.binding, sub.function),
+            )),
+            None => findings.push(Finding::UnboundBinding {
+                function: function.to_string(),
+                binding: sub.binding.to_string(),
+            }),
+        }
+    }
+
+    // Multiset, not set. Declaring token::transfer once authorizes exactly one
+    // transfer. A second one is a second movement of the payer's money, and
+    // matching by name alone would wave it through because it is the same
+    // contract and the same function as the payment the payer agreed to.
+    let mut unmatched = declared_subs.clone();
+    for (address, symbol) in &observed_subs {
+        match unmatched
+            .iter()
+            .position(|(a, s, _)| a == address && s == symbol)
+        {
+            Some(i) => {
+                unmatched.remove(i);
+            }
+            None => findings.push(Finding::UndeclaredSubinvocation {
+                function: function.to_string(),
+                contract: format!("{address:?}"),
+                sub_function: format!("{symbol:?}"),
+            }),
+        }
+    }
+
+    for (_, _, label) in unmatched {
+        findings.push(Finding::MissingSubinvocation {
+            function: function.to_string(),
+            declared: label,
         });
     }
 
