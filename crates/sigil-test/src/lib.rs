@@ -70,6 +70,9 @@ pub enum Finding {
     },
     /// SIG-004: the spec declares a sub-invocation the contract never made.
     MissingSubinvocation { function: String, declared: String },
+    /// SIG-005: the spec declares an authorization requirement, but a caller
+    /// without it still succeeded.
+    RequirementNotEnforced { function: String, declared: String },
     /// SIG-011: an address authorized that the spec does not name.
     UnexpectedAuthorization { function: String, address: String },
     /// The spec names a binding the test did not supply an address for.
@@ -104,6 +107,10 @@ impl std::fmt::Display for Finding {
             Finding::MissingSubinvocation { function, declared } => write!(
                 f,
                 "SIG-004 {function}: spec declares sub-invocation '{declared}', which never happened"
+            ),
+            Finding::RequirementNotEnforced { function, declared } => write!(
+                f,
+                "SIG-005 {function}: spec requires '{declared}' to authorize, but a caller without that authorization succeeded"
             ),
             Finding::UnexpectedAuthorization { function, address } => write!(
                 f,
@@ -270,6 +277,57 @@ pub fn check_auth(env: &Env, spec: &Spec, function: &str, bindings: &Bindings) -
     }
 
     findings
+}
+
+/// What happened when a function was called without the authorization its spec
+/// declares.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Outcome {
+    /// The call went through.
+    Succeeded,
+    /// The call was rejected.
+    Rejected,
+}
+
+/// SIG-005: a declared authorization requirement must actually be enforced.
+///
+/// [`check_auth`] runs under `mock_all_auths`, where every authorization
+/// succeeds, so it can only report what a contract *demanded*. It cannot tell
+/// you whether an unauthorized caller is turned away. A function that demands
+/// authorization from an address the caller supplies looks perfectly healthy
+/// there: somebody authorized, and the tree is exactly as declared. The caller
+/// simply passed their own address.
+///
+/// So the caller drives the negative case themselves, granting authorization
+/// only to an identity that should not qualify, and reports what happened:
+///
+/// ```ignore
+/// env.mock_auths(&[MockAuth { address: &intruder, invoke: &... }]);
+/// let outcome = match client.try_set_fee(&intruder, &99) {
+///     Ok(_) => Outcome::Succeeded,
+///     Err(_) => Outcome::Rejected,
+/// };
+/// assert!(check_enforced(&spec, "set_fee", outcome).is_empty());
+/// ```
+pub fn check_enforced(spec: &Spec, function: &str, outcome: Outcome) -> Vec<Finding> {
+    let Some(declared) = spec.function(function) else {
+        return vec![Finding::FunctionNotDeclared {
+            function: function.to_string(),
+        }];
+    };
+
+    // A function declared to need nobody's approval is allowed to succeed.
+    if declared.authorizers.is_empty() {
+        return Vec::new();
+    }
+
+    match outcome {
+        Outcome::Rejected => Vec::new(),
+        Outcome::Succeeded => vec![Finding::RequirementNotEnforced {
+            function: function.to_string(),
+            declared: declared.authorizers.join(", "),
+        }],
+    }
 }
 
 /// Panics with every finding if the observed surface diverges from the spec.

@@ -331,6 +331,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "corpus-open-admin-fn"
+version = "0.1.0"
+dependencies = [
+ "sigil-spec",
+ "sigil-test",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "corpus-undeclared-transfer"
 version = "0.1.0"
 dependencies = [

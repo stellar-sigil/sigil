@@ -1,0 +1,10 @@
+[contract]
+name = "open_admin_fn"
+
+# Only the stored admin may change the fee. Note what this cannot express on its
+# own: that the authorizing address is the *stored* admin rather than whichever
+# address the caller handed in. That is why SIG-005 exists.
+[[function]]
+name = "set_fee"
+authorizers = ["admin"]
+subinvocations = []

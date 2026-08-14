@@ -27,9 +27,9 @@ the worked examples to copy.
 |----|------|--------|
 | SIG-001 missing authorization | A | done |
 | SIG-002 wrong authorizer | A | done |
-| SIG-003 undeclared sub-invocation | A | open |
-| SIG-004 declared sub-invocation never demanded | B | open |
-| SIG-005 unauthorized caller succeeds | A | open |
+| SIG-003 undeclared sub-invocation | A | done |
+| SIG-004 declared sub-invocation never demanded | B | done |
+| SIG-005 unauthorized caller succeeds | A | done |
 | SIG-006 auth tree ordering | C | open |
 | SIG-007 weak admin gate | A | open |
 | SIG-008 ambiguous authorizer | A | open |
