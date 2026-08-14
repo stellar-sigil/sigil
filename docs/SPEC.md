@@ -40,6 +40,23 @@ authorizers = []
 test at assertion time, because the same spec has to work against freshly
 generated addresses on every run.
 
+## Sub-invocations are counted, not just named
+
+`subinvocations` is compared as a multiset. Declaring `token::transfer` once
+authorizes exactly one transfer, and a second one is reported as undeclared.
+
+This matters because the realistic abuse reuses the legitimate call. A payment
+gateway that transfers to the merchant and then transfers again to an address
+of its own choosing is using the same contract and the same function both
+times. Matching on names alone waves the second one through, since it looks
+identical to the payment the signer agreed to.
+
+Declare a call once per time it should happen:
+
+```toml
+subinvocations = ["token::transfer", "token::transfer"]  # two are expected
+```
+
 ## Why an empty list is meaningful
 
 `authorizers = []` is not the same as omitting the function. Omitting it says

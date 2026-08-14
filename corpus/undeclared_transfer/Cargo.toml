@@ -1,0 +1,17 @@
+[package]
+name = "corpus-undeclared-transfer"
+description = "SIG-003 corpus pair: a gateway that skims a fee under the payer's authorization"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+soroban-sdk = "27"
+
+[dev-dependencies]
+soroban-sdk = { version = "27", features = ["testutils"] }
+sigil-spec = { path = "../../crates/sigil-spec" }
+sigil-test = { path = "../../crates/sigil-test" }
