@@ -149,6 +149,23 @@ mod tests {
             "the admin gate should have refused"
         );
         assert_eq!(client.fee(), 0, "the fee must not have changed");
+
+        // Positive control. Without it this test passes against a contract that
+        // rejects everyone, including one whose body is a bare panic: the
+        // intruder is refused and the fee stays 0 for the wrong reason.
+        // `Err(_)` cannot tell an authorization rejection from any other trap,
+        // so the proof that the gate is a gate is that the admin gets through.
+        env.mock_auths(&[MockAuth {
+            address: &admin,
+            invoke: &MockAuthInvoke {
+                contract: &id,
+                fn_name: "set_fee",
+                args: (admin.clone(), 40i128).into_val(&env),
+                sub_invokes: &[],
+            },
+        }]);
+        client.set_fee(&admin, &40);
+        assert_eq!(client.fee(), 40, "the admin must be able to set the fee");
     }
 
     /// Why SIG-005 is not redundant with the surface checks: under

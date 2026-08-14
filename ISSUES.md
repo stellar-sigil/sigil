@@ -1,8 +1,11 @@
 # Backlog
 
-The work this repository intends to hand to contributors. Every row here maps
-to a row already committed in [docs/CHECKS.md](docs/CHECKS.md),
-[docs/PROBES.md](docs/PROBES.md) or [docs/SPEC.md](docs/SPEC.md).
+The work this repository intends to hand to contributors. Every row in the
+Checks, Probes and Spec directives tables below maps to a row already committed
+in [docs/CHECKS.md](docs/CHECKS.md), [docs/PROBES.md](docs/PROBES.md) or
+[docs/SPEC.md](docs/SPEC.md). The Other table is the exception: those items have
+no registry row yet, and each one needs its spec written before it becomes an
+issue.
 
 No issue is opened for code that is not yet in the tree. A row becomes an issue
 once its stub, registry entry or failing test is committed, so a contributor
@@ -28,14 +31,14 @@ the worked examples to copy.
 | SIG-001 missing authorization | A | done |
 | SIG-002 wrong authorizer | A | done |
 | SIG-003 undeclared sub-invocation | A | done |
-| SIG-004 declared sub-invocation never demanded | B | done |
+| SIG-004 declared sub-invocation never demanded | B | done (shares the `undeclared_transfer` corpus) |
 | SIG-005 unauthorized caller succeeds | A | done |
 | SIG-006 auth tree ordering | C | open |
 | SIG-007 weak admin gate | A | open |
 | SIG-008 ambiguous authorizer | A | open |
 | SIG-009 unchecked try_auth result | A | open |
 | SIG-010 contract self-authorizes a transfer | A | open |
-| SIG-011 over-authorized view function | B | partially implemented |
+| SIG-011 over-authorized view function | B | emits, but has no corpus pair and no test |
 | SIG-012 authorization conditional on arguments | A | open |
 
 ## Probes

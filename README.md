@@ -29,10 +29,16 @@ yet. What works today:
 - `crates/sigil-spec` parses `sigil.toml`, the declared authorization surface.
 - `crates/sigil-test` compares that declaration against what a contract actually
   demands, and reports the difference.
-- Two checks are implemented and proven against deliberately broken contracts:
-  **SIG-001** (a state change nobody authorized) and **SIG-002** (the wrong
-  address authorized). Each ships with a `corpus/` pair, and the check must
-  report the vulnerable half and stay silent on the fixed half to count.
+- Five checks are implemented and proven against deliberately broken contracts:
+  **SIG-001** (a state change nobody authorized), **SIG-002** (the wrong address
+  authorized), **SIG-003** (a call the spec never declared, authorized anyway),
+  **SIG-004** (a declared call that never happened) and **SIG-005** (a declared
+  requirement that is not enforced). Each is proven by a `corpus/` pair, and a
+  check only counts once it reports the vulnerable half and stays silent on the
+  fixed half. Every one of them has been verified by breaking the fixed contract
+  and confirming the test fails.
+- **SIG-011** emits a finding but has no corpus pair and no test, so it is
+  marked `wip` rather than done.
 
 What does not exist yet: the CLI, every live-network probe in
 [docs/PROBES.md](docs/PROBES.md), the client-side package, and the remaining
@@ -61,7 +67,9 @@ the preimage in Rust, and asserts both the XDR encoding and the SHA-256 match.
     crates/sigil-auth      signing payload construction
     crates/sigil-spec      sigil.toml parser
     crates/sigil-test      assertions against a contract's auth surface
-    corpus/                vulnerable/fixed contract pairs, one per check
+    corpus/                vulnerable/fixed contract pairs behind the checks
+    probes/                deployable target + what has actually been run on testnet
+    scripts/               fixture generation (JS SDK)
     docs/CHECKS.md         sandbox check registry
     docs/PROBES.md         live-network probe registry
     docs/SPEC.md           sigil.toml directives
