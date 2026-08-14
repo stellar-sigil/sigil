@@ -2,10 +2,24 @@
 
 Checks that run in the `soroban-sdk` test environment. No network needed.
 
-Each check compares the authorization tree a contract actually demands
-(`env.auths()`) against the tree declared in `sigil.toml`. A check is only
-accepted once it reports the finding on the vulnerable half of a corpus pair
-and stays silent on the fixed half.
+There are two kinds, and they answer different questions.
+
+**Surface checks** (SIG-001 to SIG-004, SIG-011) compare the authorization tree
+a contract actually demands (`env.auths()` under `mock_all_auths`) against the
+tree declared in `sigil.toml`. They see what was *asked for*.
+
+**Enforcement checks** (SIG-005) cannot see the tree at all. `mock_all_auths`
+makes every authorization succeed, so nothing there reveals whether an
+unauthorized caller is turned away. The caller drives an invocation as an
+identity that should not qualify and reports the outcome, and `check_enforced`
+grades it. Two consequences worth stating plainly: the function takes no `Env`
+and will emit its finding from an outcome alone, and an `Outcome::Rejected`
+derived from `Err(_)` cannot distinguish an authorization failure from any
+other trap. Pair it with a positive control that the rightful authorizer
+succeeds, or the test passes against a contract that refuses everyone.
+
+A check is only accepted once it reports the finding on the vulnerable half of
+a corpus pair and stays silent on the fixed half.
 
 Status: `done` shipped, `wip` in progress, `todo` not started.
 
@@ -21,7 +35,7 @@ Status: `done` shipped, `wip` in progress, `todo` not started.
 | SIG-008 | Two addresses can satisfy a rule that names one | high | `ambiguous_authorizer` | todo |
 | SIG-009 | Authorization is demanded but the result is not checked | high | `unchecked_try_auth` | todo |
 | SIG-010 | Token transfer authorized by the contract rather than the holder | critical | `contract_self_auth` | todo |
-| SIG-011 | Read-only function demands authorization | low | `over_auth_view` | wip |
+| SIG-011 | Read-only function demands authorization | low | (none yet) | wip |
 | SIG-012 | Auth requirement depends on argument values | high | `conditional_auth` | todo |
 
 ## Notes

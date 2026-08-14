@@ -22,6 +22,8 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test --all
+      - name: no phantom dependencies
+        run: python3 scripts/check-deps.py
 
   fixtures:
     # The Rust signing payload is pinned against the JS SDK. If the SDK changes

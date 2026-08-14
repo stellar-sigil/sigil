@@ -13,6 +13,7 @@ get wrong.
 | contract | `CCFEP5YJV6FG2S2WCPUZWWI2E2DOF3URKQRVVQKOLPOQF74AIP5754VA` |
 | deploy tx | `a5fa7e5b91733fa68a1e751e9f061407337cc4932e4e7cf6f65d5fbdf15bb3b0` |
 | control tx | `303078742523d2415d188e142a3b0b7b44986683061d5fc5eb7efdc2773183a9` |
+| the false positive | `11b3261ef9c90f87e66ec2937b89310c1626dd317f6014b43af5e2e02f76c114` |
 
 The control transaction is the owner authorizing `set_value` for its own
 address, which is the half of every probe that must succeed. Explorer:
@@ -21,8 +22,9 @@ address, which is the half of every probe that must succeed. Explorer:
 ## The harness must not hold the victim's key
 
 Running the PRB-003 attempt (sign for address A with keypair B) from a normal
-developer machine produced a **false negative**: the transaction succeeded and
-wrote the owner's state.
+developer machine produced a **false positive**: the transaction succeeded and
+wrote the owner's state, which reads as a network vulnerability and is not one.
+That transaction is `11b3261e...` in the table above, kept deliberately.
 
 The network was not at fault. `stellar contract invoke` resolves the auth
 entries that simulation reports and signs them with any matching key in the

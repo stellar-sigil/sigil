@@ -86,6 +86,20 @@ impl Vulnerable {
     }
 }
 
+/// Declared but absent: takes the payer's authorization for a payment it never
+/// makes. The spec says signing `pay` authorizes one `token::transfer`, and
+/// this contract makes none, so the signature bought the payer nothing.
+#[contract]
+pub struct NeverPays;
+
+#[contractimpl]
+impl NeverPays {
+    pub fn pay(env: Env, payer: Address, merchant: Address, amount: i128, token: Address) {
+        let _ = (merchant, amount, token, &env);
+        payer.require_auth();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     extern crate std;
@@ -190,6 +204,57 @@ mod tests {
             )),
             "the authorizer set should be clean here: {findings:?}"
         );
+    }
+
+    #[test]
+    fn sig_004_reports_the_gateway_that_never_pays() {
+        let s = setup();
+        let gateway = s.env.register(NeverPays, ());
+        NeverPaysClient::new(&s.env, &gateway).pay(&s.payer, &s.merchant, &1_000, &s.token);
+
+        let spec = Spec::parse(SPEC).expect("spec parses");
+        let findings = check_auth(&s.env, &spec, "pay", &bindings(&s));
+
+        assert_eq!(
+            findings,
+            std::vec![Finding::MissingSubinvocation {
+                function: "pay".into(),
+                declared: "token::transfer".into(),
+            }]
+        );
+    }
+
+    #[test]
+    fn sig_004_is_silent_on_the_honest_gateway() {
+        let s = setup();
+        let gateway = s.env.register(Fixed, ());
+        FixedClient::new(&s.env, &gateway).pay(&s.payer, &s.merchant, &1_000, &s.token);
+
+        let spec = Spec::parse(SPEC).expect("spec parses");
+        let findings = check_auth(&s.env, &spec, "pay", &bindings(&s));
+
+        assert!(
+            !findings
+                .iter()
+                .any(|f| matches!(f, Finding::MissingSubinvocation { .. })),
+            "unexpected SIG-004: {findings:?}"
+        );
+    }
+
+    /// The merchant is really paid by the honest gateway, and really not paid by
+    /// the one that only takes the signature.
+    #[test]
+    fn the_declared_payment_actually_happens() {
+        let s = setup();
+        let token = TokenClient::new(&s.env, &s.token);
+
+        let honest = s.env.register(Fixed, ());
+        FixedClient::new(&s.env, &honest).pay(&s.payer, &s.merchant, &1_000, &s.token);
+        assert_eq!(token.balance_of(&s.merchant), 1_000);
+
+        let absent = s.env.register(NeverPays, ());
+        NeverPaysClient::new(&s.env, &absent).pay(&s.payer, &s.merchant, &1_000, &s.token);
+        assert_eq!(token.balance_of(&s.merchant), 1_000, "nothing more moved");
     }
 
     /// The money really moves, so the pair differs in behaviour and not only in

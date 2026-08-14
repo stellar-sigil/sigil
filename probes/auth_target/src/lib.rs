@@ -48,7 +48,14 @@ mod tests {
         client.set_value(&owner, &42);
         // Read auths before any further invocation: env.auths() describes the
         // most recent call, and get_value would clear it.
-        assert_eq!(env.auths().len(), 1);
+        //
+        // Assert who authorized, not how many did. Counting alone still passes
+        // when the contract demands authorization from itself instead of the
+        // owner, and every probe in docs/PROBES.md is defined against this
+        // contract as "control = the owner authorizes".
+        let auths = env.auths();
+        assert_eq!(auths.len(), 1);
+        assert_eq!(auths[0].0, owner, "set_value must demand the owner");
 
         assert_eq!(client.get_value(&owner), 42);
     }

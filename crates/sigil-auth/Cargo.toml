@@ -10,8 +10,8 @@ rust-version.workspace = true
 [dependencies]
 stellar-xdr = { version = "23", features = ["curr", "std", "base64"] }
 sha2.workspace = true
-hex.workspace = true
 
 [dev-dependencies]
+hex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
