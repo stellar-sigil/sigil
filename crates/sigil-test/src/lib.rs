@@ -127,6 +127,17 @@ impl std::fmt::Display for Finding {
     }
 }
 
+/// The strkey a human would paste into an explorer.
+///
+/// `Debug` renders `Contract(C...)`, which is noise in a finding message and
+/// invites someone to copy the wrapper along with the address.
+fn strkey(address: &Address) -> String {
+    let s = address.to_string();
+    let mut buf = std::vec![0u8; s.len() as usize];
+    s.copy_into_slice(&mut buf);
+    String::from_utf8(buf).unwrap_or_else(|_| strkey(address))
+}
+
 /// Recorded authorizations whose top-level call is `function`.
 fn invocations_of(env: &Env, function: &str) -> Vec<(Address, AuthorizedInvocation)> {
     let wanted = Symbol::new(env, function);
@@ -214,7 +225,7 @@ pub fn check_auth(env: &Env, spec: &Spec, function: &str, bindings: &Bindings) -
             findings.push(Finding::WrongAuthorizer {
                 function: function.to_string(),
                 expected_binding: binding,
-                actual: format!("{:?}", unexpected.remove(0)),
+                actual: strkey(unexpected.remove(0)),
             });
         }
     }
@@ -222,7 +233,7 @@ pub fn check_auth(env: &Env, spec: &Spec, function: &str, bindings: &Bindings) -
     for address in unexpected {
         findings.push(Finding::UnexpectedAuthorization {
             function: function.to_string(),
-            address: format!("{address:?}"),
+            address: strkey(address),
         });
     }
 
@@ -263,7 +274,7 @@ pub fn check_auth(env: &Env, spec: &Spec, function: &str, bindings: &Bindings) -
             }
             None => findings.push(Finding::UndeclaredSubinvocation {
                 function: function.to_string(),
-                contract: format!("{address:?}"),
+                contract: strkey(address),
                 sub_function: format!("{symbol:?}"),
             }),
         }
